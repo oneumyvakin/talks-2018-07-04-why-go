@@ -1,0 +1,462 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Язык программирования Go для тестировщиков</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<img  src="img/gopher.png" />
+					
+					<aside class="notes">
+						Это гофер. Символ языка Go. Как слон в PHP, или питон в питоне, или дельфин в MySQL.
+						Как Питонисты, разработчики на го называют себя Гоферами.
+					</aside>
+				</section>
+				
+				<section>
+					<h1>Почему учить Go?</h1>
+					<br>
+					<small style="text-align: center;">
+						Олег Неумывакин<br>
+						Тестировщик<br>
+						@oneumyvakin<br>
+					</small>
+				</section>
+				
+				<section>
+					<br>
+					<p style="text-align: left;">
+						<pre><code class="hljs" data-trim contenteditable>
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, world!")
+}
+					</code></pre>
+					</p>
+
+					<aside class="notes">
+						Банальный хелло ворлд, чтобы Вы не пугались, что это какой-то мудреный язык типа Питона.<br>
+						Один из плюсов языка - он очень простой, намного проще PHP или Питона<br>
+					</aside>
+				</section>
+				
+				<section>
+					<br>
+					<p style="text-align: left;">
+						<pre><code class="hljs" data-trim contenteditable>
+package main
+
+import (
+    "fmt"
+    "github.com/oneumyvakin/hello"
+)	
+
+func main() {
+    hello.World()
+}
+					</code></pre>
+					</p>
+
+					<aside class="notes">
+						<br>
+					</aside>
+				</section>
+				
+				<section>
+					<br>
+					<p style="text-align: left;">
+						<pre><code class="hljs" data-trim contenteditable>
+package main
+
+import (
+    "github.com/oneumyvakin/hello"
+)	
+
+func main() {
+    hello.WorldIn("ru-RU")
+}
+					</code></pre>
+					</p>
+
+					<aside class="notes">
+						<br>
+					</aside>
+				</section>
+
+				<section>
+					<br>
+					<p style="text-align: left;">
+						<pre><code class="hljs stretch" data-trim contenteditable>
+package main
+
+import (
+    "fmt"
+    "github.com/oneumyvakin/hello"
+)
+
+func main() {
+    langs := []string{"ru-RU", "en-US",	"zh-CN", "fr-FR"}
+
+    for _, lang := range langs {
+        err := hello.WorldIn(lang)
+        if err != nil {
+            fmt.Println(err)
+            break
+        }
+    }
+}
+					</code></pre>
+					</p>
+
+					<aside class="notes">
+						<br>
+					</aside>
+				</section>
+				
+				<section>
+					<br>
+					<p style="text-align: left;">
+						<pre><code class="hljs stretch" data-trim contenteditable>
+package main
+
+import (
+    "sync"
+    "github.com/oneumyvakin/hello"
+)
+
+func main() {
+    var wg sync.WaitGroup
+    for lang := range hello.SupportedLangs {
+        wg.Add(1)
+        go wrapperForHelloWorld(lang, &wg)
+    }
+    wg.Wait()
+}
+
+func wrapperForHelloWorld(lang string, wg *sync.WaitGroup) {
+    hello.WorldIn(lang)
+    wg.Done()
+}
+					</code></pre>
+					</p>
+
+					<aside class="notes">
+						<br>
+					</aside>
+				</section>
+				
+				
+				<section>
+					<h1>Цель: мотивировать</h1>
+
+					<aside class="notes">
+						моя цель мотивировать Вас на изучение языка Go<br>
+						Выбыли по разным причинам: Erlang, Haskell, Rust<br>
+						попытаюсь объяснить почему это важно, что из этой процедуры вы сможете вынести<br>
+						и я это буду делать с позиции QA<br>
+						а для того чтобы Вы мне поверили, или наоборот сразу не поверили, немного обо мне...<br>
+					</aside>					
+				</section>
+				
+				<section>
+					<h3>Bio</h3>
+					<br>
+					<p style="text-align: left;">
+					- 10+ лет тестирования серверных коробочных решений<br>
+					- из них, ~5 лет в исследовании технических проблем<br>					
+					- Python, PHP, C, C#, Go<br>
+					</p>
+					<aside class="notes">
+						10 лет в тестировании Плеска.<br>
+						половина из этого времени , расследовал последствия того, как и что делают разработчики<br>
+						т.к. функциональность разная, продукты разные, взаимодейтвие между продуктами разное<br>
+						ретроспективы тестирования вынес один шаблон...<br>						
+					</aside>	
+				</section>
+				
+				<section>
+					<h3>Когда у нас нет технических знаний<br> мы делаем плохой<br> тест-дизайн</h3>
+					
+					<aside class="notes">					
+						Пример: Яндекс.Деление, float и JS в браузере<br>
+						Пример: нулевые или принимаемывае как нулевые значения, JSON<br>
+						чтобы делать тестирование лучше, предотвращать проблемы, тестированию нужно знать...<br>
+					</aside>
+				</section>
+				
+				<section>
+					<h3>QA нужно знать как сделан продукт</h3>
+					<p style="text-align: left;">
+					- знать технические возможности и ограничения<br>						
+					- знать стандарты, плохие и хорошие практики<br>					
+					- знать проблемы разработчиков<br>
+					- говорить на одном языке с разработчиками<br>
+					- смотреть на свой продукт с другой точки зрения<br>
+					</p>
+					<aside class="notes">
+						не тестировать в слепую<br>
+						проблемы разработчиков - с которыми разработчики постоянно сталкиваются<br>
+						эффективней коммуницировать, чтобы доносить свою точку зрения<br>
+						другая точка зрения    - это очень мощная практика, не всегда полезна, требует концентрации на переключение<br>
+						суммируя это всё, нам нужны...<br>
+					</aside>
+				</section>
+			
+				<section>
+					<h2>Нужны новые<br>глубокие знания<br> о нашем продукте</h2>
+					
+					<aside class="notes">
+						актуальные знания, удобные инструменты, от проверенных людей<br>
+						каким способом мы можем их получить?<br>
+					</aside>
+				</section>
+				
+				<section>
+					<img  src="img/gopher.png" />
+					<p>фишка языка Go #1: образование</p>
+					
+					<aside class="notes">					
+						И вот тут я вижу такую фишка Go<br>
+						убрать из языка лишнее и оставить только нужное<br>
+						учесть ошибки прошлого<br>
+						поэтому Go отличается от других, этих отличий много<br>
+						Создателям языка нужно было объяснить почему это сделано именно так<br>
+						Для QA, Go дает другую точку зрения, на то, что и как делают разработчики на других языках<br>
+						и QA может перенести эту экспертизу на свой продукт со стороны обеспечения качества и надежности<br>
+					</aside>
+				</section>				
+				
+				<section>
+					<img  src="img/gopher.png" />
+					<p>фишка языка Go #2 (масштабируемость)</p>		
+					
+					<aside class="notes">					
+						вторая фишка Go<br>
+						чистым бонусом мы получаем возможность для тестирования<br> 
+						быстро и удобно<br> 
+						использовать, модифицировать чужие инструменты<br>
+						и создавать собственные<br>
+						Примеры: let's encrypt server и WPR<br>
+					</aside>
+				</section>
+				
+				<!--<section>
+					<h3>Другая точка зрения позволяет нам понять общие сложные концепции</h3>
+					<p style="text-align: left;">					
+						- структурирование данных<br>
+						- отделение данных от логики<br>
+						- данные типизированны<br>						
+						- исключения(exceptions) порождают альтернативную логику выполнения<br>
+						- конкурентное выполнение кода<br>
+						- выделение памяти и как это влияет на производительность<br>
+						- производительность<br>
+						- etc<br>
+					</p>					
+					
+					<aside class="notes">
+						- структурирование данных
+					</aside>
+				</section>-->
+				<section>
+					<h3>Для кого?</h3>
+					<p style="text-align: left;">				
+						- если Вы уже пробовали Go<br>
+						- если Вам нужен надежный, удобный инструмент<br>
+						- если Вы хотите разобраться с производительностью<br>
+						- если Ваш продукт кроссплатформенный<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Почему Go?</h3>
+					<p style="text-align: left;">
+						- простой язык<br>												
+						- язык стабильней чем PHP/Python/JS<br>
+						- хорошая стандартная библиотека<br>
+						- маленькая экосистема<br>
+						- большое сообщество<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Для кого?</h3>
+					<p style="text-align: left;">					
+						- для компаний<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Почему Go?</h3>
+					<p style="text-align: left;">
+						- читаемый код<br>
+						- настоятельно подталкивает проверять ошибки<br>
+						- вынуждает структурировать данные<br>							
+						- вынуждает явно отделить данные от поведения<br>							
+						- не скрывает технический долг<br>
+					</p>
+				</section>				
+				
+				<section>
+					<h3>Почему Go?</h3>
+					<p style="text-align: left;">
+						- написан на Go, а не на С/C++ как PHP, Python, JS<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Почему Go?</h3>
+					<p style="text-align: left;">
+						Из коробки:<br>
+						- выполнение тестов с code coveragе<br>
+						- выполнение бенчмарков<br>							
+						- профилирование производительности<br>
+						- кросскомпиляция<br>
+						- генерация документации<br>
+						- code style<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Почему нет?</h3>
+					<p style="text-align: left;">
+						<span class="fragment">- нет родных библиотек для нативного GUI<br></span>
+						<span class="fragment">- нет динамической типизации(внезапно)<br></span>
+						<span class="fragment">- Go немного угловатый<br></span>
+						<span class="fragment">- непривычный ООП<br></span>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Почему нет?</h3>
+					<p style="text-align: left;">
+						<span class="fragment">- Python/JS/Java-программистам будет очень не просто<br></span>
+						<span class="fragment">- достаточно подводных камней<br></span>
+						<span class="fragment">- не идеальный, не волшебный, не лучше других<br></span>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Что брать?</h3>
+					<p style="text-align: left;">
+						- https://golang.org/<br>
+						- JetBrains IDE: GoLand<br>
+						- Visual Studio Code<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Как начать?</h3>
+					<p style="text-align: left;">
+						- скачать и установить компилятор с <a href="https://golang.org/">golang.org</a><br>
+						- разобраться с переменной окружения GOPATH<br>
+						- написать код в файле %GOPATH%\src\myapp\main.go<br>
+						- собрать: go build -o myapp.exe myapp<br>
+						- запустить myapp.exe<br>
+					</p>
+				</section>				
+				
+				<section>
+					<h3>Как продолжить?</h3>
+					<p style="text-align: left;">
+						- https://tour.golang.org/<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Как продолжить?</h3>
+					<p style="text-align: left;">
+						- писать код<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Как продолжить?</h3>
+					<p style="text-align: left;">
+						- <a href="https://habr.com/company/mailru/blog/314804/" target="_blank">Ловушки, подводные камни и распространённые ошибки новичков</a><br>
+						- Книга «Язык программирования Go» авторства Алан А. А. Донован, Брайан У. Керниган<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Как продолжить?</h3>
+					<p style="text-align: left;">
+						Доклады/статьи от авторов языка:<br>
+						- Rob Pike<br>
+						- Russ Cox<br>
+						- Robert Griesemer<br>
+						- Ken Thomson<br>
+						- Andrew Gerrand<br>
+						- Brad Fitzpatrick<br> 							
+					</p>
+				</section>
+				
+				<section>
+					<h3>Как продолжить?</h3>
+					<p style="text-align: left;">
+						Доклады/статьи:<br>
+						- Dmitry Vyukov<br>
+						- Марко Кевац<br>
+						- Вячеслав Бахмутов<br>
+						- Сергей Камардин<br>
+					</p>
+				</section>
+				
+				<section>
+					<h3>Сообщество?</h3>
+					<p style="text-align: left;">
+						- подкаст https://golangshow.com<br>
+						- Slack: http://slack.golang-ru.com/<br>
+						- https://twitter.com/4gophers<br>
+					</p>
+				</section>
+				
+				<section>
+					<h1>Вопросы?</h1>	
+
+					<img  src="img/dancing_gopher.gif" />					
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/highlight/go.min.js', async: true  }
+				]
+			});
+		</script>
+	</body>
+</html>
